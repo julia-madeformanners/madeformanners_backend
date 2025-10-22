@@ -32,7 +32,8 @@ const deleteAllCourses = async () => {
 const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://madeformanners.com"
+  "https://madeformanners.com",
+  "https://www.madeformanners.com"
 ];
 
 const corsOptions = {
