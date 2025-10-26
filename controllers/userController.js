@@ -4,7 +4,16 @@ const { User, Course } = require("../data");
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const multer = require("multer");
+const crypto = require("crypto");
+const { ClientSecretCredential } = require("@azure/identity");
+const { Client } = require('@microsoft/microsoft-graph-client');
+require('isomorphic-fetch');
+
 const SECRET_KEY = process.env.JWT_SECRET;
+const CLIENT_ID = process.env.AZURE_CLIENT_ID; // سجّل التطبيق وخذ هذا
+const TENANT_ID = process.env.AZURE_TENANT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const SENDER_EMAIL = process.env.SENDER_EMAIL;
 
 // Cloudinary config
 cloudinary.config({
@@ -176,7 +185,88 @@ exports.uploadVideoLink = [
   }
 ];
 
+// دالة لإنشاء Graph Client
+function getGraphClient() {
+  const credential = new ClientSecretCredential(TENANT_ID, CLIENT_ID, CLIENT_SECRET);
+  return Client.init({
+    authProvider: async (done) => {
+      try {
+        const tokenResponse = await credential.getToken("https://graph.microsoft.com/.default");
+        done(null, tokenResponse.token);
+      } catch (err) {
+        done(err, null);
+      }
+    },
+  });
+}
 
+// Forgot Password
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpire = Date.now() + 15 * 60 * 1000; // 15 دقيقة
+    await user.save();
+
+    const resetUrl = `https://madeformanners.com/reset-password/${resetToken}`;
+
+    const client = getGraphClient();
+
+    const mail = {
+      message: {
+        subject: "Password Reset",
+        body: {
+          contentType: "HTML",
+          content: `<p>Click the link to reset your password (valid for 15 minutes):</p>
+                    <a href="${resetUrl}">${resetUrl}</a>`,
+        },
+        toRecipients: [{ emailAddress: { address: user.email } }],
+      },
+      saveToSentItems: "true",
+    };
+
+    await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(mail);
+
+    res.json({ message: "Reset link sent to your email" });
+  } catch (err) {
+    console.error("forgotPassword error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Reset Password
+exports.resetPassword = async (req, res) => {
+  const { token } = req.params;
+  const { password, confirmPassword } = req.body;
+
+  try {
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) return res.status(400).json({ message: "Invalid or expired token" });
+    if (password.length < 8)
+      return res.status(400).json({ message: "Password must be at least 8 characters long" });
+
+    if (password !== confirmPassword)
+      return res.status(400).json({ message: "Passwords do not match" });
+
+    user.password = password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+    res.json({ message: "Password has been reset successfully" });
+  } catch (err) {
+    console.error("resetPassword error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 exports.deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

@@ -76,57 +76,51 @@ mongoose.connect(process.env.MONGO_URI)
 //     // deleteAllUsers(); deleteAllCourses()
 //   })
 //   .catch((err) => console.error("MongoDB connection failed", err));
-cron.schedule("0 0 * * *", async () => {
-  try {
-    const now = new Date();
 
+cron.schedule("0 0 * * *", async () => { 
+  try {
+   
+    const now = new Date();
+    const oneWeek = 7 * 24 * 60 * 60 * 1000;
+
+    // delete after 1 week
     const courses = await Course.find();
 
     for (const course of courses) {
-      const filteredVideos = course.videos.filter(video => {
-        const videoDate = new Date(video.date); 
-        const expireDate = new Date(videoDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-        return expireDate > now; 
-      });
+      if (!course.date) continue; 
 
-      if (filteredVideos.length !== course.videos.length) {
-        course.videos = filteredVideos;
-        await course.save();
+      const courseDate = new Date(course.date);
+      const expireDate = new Date(courseDate.getTime() + oneWeek);
+
+      if (expireDate <= now) {
+      
+        await Course.findByIdAndDelete(course._id);
       }
     }
 
-    
+   
     const users = await User.find();
 
     for (const user of users) {
-      let updated = false;
-
-      user.courses.forEach(c => {
-        if (c.videos) {
-          const filteredVideos = c.videos.filter(video => {
-            const videoDate = new Date(video.date);
-            const expireDate = new Date(videoDate.getTime() + 7 * 24 * 60 * 60 * 1000);
-            return expireDate > now;
-          });
-
-          if (filteredVideos.length !== c.videos.length) {
-            c.videos = filteredVideos;
-            updated = true;
-          }
-        }
+      const filteredCourses = user.courses.filter(c => {
+        if (!c.date) return true; 
+        const courseDate = new Date(c.date);
+        const expireDate = new Date(courseDate.getTime() + oneWeek);
+        return expireDate > now; 
       });
 
-      if (updated) {
+      if (filteredCourses.length !== user.courses.length) {
+        user.courses = filteredCourses;
         await user.save();
+       
       }
     }
 
-    console.log("✅ courses delated ");
+    console.log("✅ Cron cleanup completed.\n");
   } catch (err) {
-    console.error("error", err);
+    console.error("❌ Cron error:", err);
   }
 });
-
 app.use("/api/users", userRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/payments", paymentRoutes);
