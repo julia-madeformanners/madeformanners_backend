@@ -22,3 +22,16 @@ exports.getContactUsDetails =  async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+exports.deleteContactUsMessages = async (req, res) => {
+  try {
+    const { ids } = req.body; // array of message IDs
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ success: false, message: "Invalid IDs" });
+    }
+
+    await ContactMessage.deleteMany({ _id: { $in: ids } });
+    res.json({ success: true, message: "Messages deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
