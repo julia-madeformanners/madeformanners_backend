@@ -38,6 +38,7 @@ const courses = new mongoose.Schema({
     price: Number,
     recommended: Boolean,
     link: String,
+    isNotLive: Boolean,
     categories: [String],
     // إضافة مصفوفة المشاركين
     joinedUsers: [

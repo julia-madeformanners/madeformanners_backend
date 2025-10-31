@@ -13,6 +13,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 const agoraRoutes = require("./routes/agoraRoutes");
 const contactUs = require('./routes/contactUs')
 const { User, Course } = require("./data");
+
 const deleteAllUsers = async () => {
   try {
     await User.deleteMany({});
@@ -97,8 +98,7 @@ cron.schedule("0 0 * * *", async () => {
     //     await Course.findByIdAndDelete(course._id);
     //   }
     // }
-
-   
+    
     const users = await User.find();
 
     for (const user of users) {
@@ -148,3 +148,4 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
