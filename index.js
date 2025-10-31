@@ -56,7 +56,7 @@ mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
     console.log("Connected to MongoDB");
     // deleteAllUsers();
-    //  deleteAllCourses()
+    //  deleteAllCourses();
     // حذف كل الـ collections داخل القاعدة
     // const collections = await mongoose.connection.db.collections();
     // for (let collection of collections) {
@@ -84,19 +84,19 @@ cron.schedule("0 0 * * *", async () => {
     const oneWeek = 7 * 24 * 60 * 60 * 1000;
 
     // delete after 1 week
-    const courses = await Course.find();
+    // const courses = await Course.find();
 
-    for (const course of courses) {
-      if (!course.date) continue; 
+    // for (const course of courses) {
+    //   if (!course.date) continue; 
 
-      const courseDate = new Date(course.date);
-      const expireDate = new Date(courseDate.getTime() + oneWeek);
+    //   const courseDate = new Date(course.date);
+    //   const expireDate = new Date(courseDate.getTime() + oneWeek);
 
-      if (expireDate <= now) {
+    //   if (expireDate <= now) {
       
-        await Course.findByIdAndDelete(course._id);
-      }
-    }
+    //     await Course.findByIdAndDelete(course._id);
+    //   }
+    // }
 
    
     const users = await User.find();

@@ -53,7 +53,7 @@ exports.updateUserCourseStatus = async (req, res) => {
 
     } else {
       const courseData = {
-        ...course.toObject(), // ينقل كل الحقول من الـ course
+        ...course.toObject(), 
         status: key === '1' ? 'booking' : 'watched',
       };
 
