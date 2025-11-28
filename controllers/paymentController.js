@@ -1,5 +1,4 @@
 const { Course, User } = require("../data");
-const nodemailer = require("nodemailer");
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const axios = require("axios");
@@ -12,7 +11,7 @@ const axios = require("axios");
 // const PASSWORD = "<password>"; // من حسابك Sandbox
 
 // exports.createCheckoutSession = async (req, res) => {
-
+   
 //   try {
 //     const { courseName, price, courseId, userName } = req.body;
 
@@ -99,121 +98,88 @@ exports.createCheckoutSession = async (req, res) => {
         },
       ],
       mode: "payment",
-      payment_intent_data: {
+       payment_intent_data: {
         setup_future_usage: "off_session",
       },
       success_url: `https://madeformanners.com/success?courseId=${courseId}`,
       cancel_url: "https://madeformanners.com/payment_failed",
     });
-   
-      res.json({ url: session.url });
-    } catch (err) {
-      // console.error("Error creating checkout session:", err);
-      res.status(500).json({ error: err.message });
-    }
-  };
-  // exports.createCheckoutSession = async (req, res) => {
-  //   try {
-  //     const { courseName, price, courseId, userName } = req.body;
 
-  //     const data = {
-  //       amount: price, // بالـ smallest currency unit حسب Worldpay (مثلاً سنت)
-  //       currencyCode: "GBP",
-  //       orderDescription: courseName,
-  //       paymentMethod: "CARD",
-  //       name: userName, // يمكن تعديله حسب بيانات المستخدم
-  //       returnUrl: `http://localhost:3000/payment-success?courseId=${courseId}`, // بعد الدفع
-  //     };
+    res.json({ url: session.url });
+  } catch (err) {
+    // console.error("Error creating checkout session:", err);
+    res.status(500).json({ error: err.message });
+  }
+};
+// exports.createCheckoutSession = async (req, res) => {
+//   try {
+//     const { courseName, price, courseId, userName } = req.body;
 
-  //     const response = await axios.post(WORLD_PAY_API, data, {
-  //       headers: {
-  //         Authorization: `WORLDPAY license='${API_KEY}'`,
-  //         "Content-Type": "application/json",
-  //         "v-correlation-id": uuidv4() // معرف فريد للطلب
-  //       }
-  //     });
+//     const data = {
+//       amount: price, // بالـ smallest currency unit حسب Worldpay (مثلاً سنت)
+//       currencyCode: "GBP",
+//       orderDescription: courseName,
+//       paymentMethod: "CARD",
+//       name: userName, // يمكن تعديله حسب بيانات المستخدم
+//       returnUrl: `http://localhost:3000/payment-success?courseId=${courseId}`, // بعد الدفع
+//     };
 
-  //     // Worldpay يرجع رابط الدفع في response.data.redirectUrl
-  //     res.json({ url: response.data.redirectUrl });
-  //   } catch (err) {
-  //     console.error("Error creating Worldpay session:", err.response?.data || err.message);
-  //     res.status(500).json({ error: "Failed to create payment session" });
-  //   }
-  // };
-  // Update user course status (booking / watched)
-exports.updateUserCourseStatus = async (req, res) => {
+//     const response = await axios.post(WORLD_PAY_API, data, {
+//       headers: {
+//         Authorization: `WORLDPAY license='${API_KEY}'`,
+//         "Content-Type": "application/json",
+//         "v-correlation-id": uuidv4() // معرف فريد للطلب
+//       }
+//     });
+
+//     // Worldpay يرجع رابط الدفع في response.data.redirectUrl
+//     res.json({ url: response.data.redirectUrl });
+//   } catch (err) {
+//     console.error("Error creating Worldpay session:", err.response?.data || err.message);
+//     res.status(500).json({ error: "Failed to create payment session" });
+//   }
+// };
+// Update user course status (booking / watched)
+exports.updateUserCourseStatus = async (req, res) => { 
   try {
-    const { userId, userImg, courseId, key } = req.body;
-
+    const {userId, userImg, courseId , key  } = req.body;
     const user = await User.findById(userId);
-    if (!user)
-      return res.status(404).json({ success: false, message: "User not found" });
-
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
     const course = await Course.findById(courseId);
-    if (!course)
-      return res.status(404).json({ success: false, message: "Course not found" });
+    if (!course) return res.status(404).json({ success: false, message: "Course not found" });
 
-    // Update user course status
     const courseIndex = user.courses.findIndex(c => c._id?.toString() === courseId);
-
+    
     if (courseIndex !== -1) {
-      user.courses[courseIndex].status = key === "1" ? "booked" : "watched";
+
+      user.courses[courseIndex].status = key === '1' ? 'booking' : 'watched';
+      
+
     } else {
       const courseData = {
-        ...course.toObject(),
-        status: key === "1" ? "booked" : "watched",
+        ...course.toObject(), // ينقل كل الحقول من الـ course
+        status: key === '1' ? 'booking' : 'watched',
       };
+
       user.courses.push(courseData);
+
     }
 
     await user.save();
 
-    // Add user to course arrays
-    const array = key === "1" ? course.bookedUsers : course.joinedUsers;
+    const array = key === '1' ? course.bookedUsers : course.joinedUsers;
 
-    const alreadyExists = array.some(u => u._id?.toString() === userId);
+   
+    const alreadyUserAdded = array.some(u => u._id?.toString() === userId);
 
-    if (!alreadyExists) {
-      user.img = userImg;
+    if (!alreadyUserAdded) {
+      user.img = userImg
       array.push(user);
       await course.save();
     }
 
-    // ---------- Send Email ----------
-    try {
-      const transporter = nodemailer.createTransport({
-        host: "smtp.dreamhost.com",
-        port: 465,
-        secure: true,
-        auth: {
-          user: "hello@madeformanners.com",
-          pass: "madeofmanners@12345",
-        },
-      });
-
-      const mailOptions = {
-        from: `Website Payment Notification <hello@pearllifefuneralservices.com>`,
-        to: `${user.email}, hello@madeformanners.com`,
-        subject: `🧾 Course Payment Invoice - ${course.name}`,
-        html: `
-          <h2>Course Invoice</h2>
-          <p><b>Name:</b> ${user.name}</p>
-          <p><b>Email:</b> ${user.email}</p>
-          <p><b>Course:</b> ${course.name}</p>
-          <p><b>Date:</b> ${course.date}</p>
-          <p><b>Time:</b> ${course.time} - ${course.endtime}</p>
-          <p><b>Amount:</b> £${course.price}</p>
-        `,
-      };
-
-      await transporter.sendMail(mailOptions);
-
-    } catch (emailErr) {
-      console.error("Email Error:", emailErr.message);
-    }
-
-    return res.json({ success: true, course, user });
-
+    const course1 = course;
+    res.json({ success: true, course1, user });
   } catch (err) {
     console.error("Error updating booked users:", err);
     res.status(500).json({ success: false, message: "Server error" });
