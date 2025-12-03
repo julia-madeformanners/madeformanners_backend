@@ -13,7 +13,7 @@ const courseRoutes = require("./routes/courseRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const agoraRoutes = require("./routes/agoraRoutes");
 const contactUs = require('./routes/contactUs')
-const notifications = require('./routes/notification')
+const notifications = require('./routes/notification');
 
 const { User, Course } = require("./data");
 const deleteAllUsers = async () => {

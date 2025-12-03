@@ -1,5 +1,5 @@
 const { Course, User } = require("../data");
-
+const nodemailer = require("nodemailer");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const axios = require("axios");
 
@@ -142,46 +142,99 @@ exports.createCheckoutSession = async (req, res) => {
 // Update user course status (booking / watched)
 exports.updateUserCourseStatus = async (req, res) => { 
   try {
-    const {userId, userImg, courseId , key  } = req.body;
+    const { userId, userImg, courseId, key } = req.body;
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
     const course = await Course.findById(courseId);
     if (!course) return res.status(404).json({ success: false, message: "Course not found" });
 
     const courseIndex = user.courses.findIndex(c => c._id?.toString() === courseId);
-    
+
     if (courseIndex !== -1) {
-
       user.courses[courseIndex].status = key === '1' ? 'booking' : 'watched';
-      
-
     } else {
       const courseData = {
-        ...course.toObject(), // ينقل كل الحقول من الـ course
+        ...course.toObject(),
         status: key === '1' ? 'booking' : 'watched',
       };
-
       user.courses.push(courseData);
-
     }
 
     await user.save();
 
     const array = key === '1' ? course.bookedUsers : course.joinedUsers;
 
-   
     const alreadyUserAdded = array.some(u => u._id?.toString() === userId);
 
     if (!alreadyUserAdded) {
-      user.img = userImg
+      user.img = userImg;
       array.push(user);
       await course.save();
     }
 
-    const course1 = course;
-    res.json({ success: true, course1, user });
+    const client = getGraphClient();
+
+    const invoiceHtml = `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+        <h2>🧾 Course Invoice</h2>
+        <p>Hi ${user.name},</p>
+
+        <p>Thank you for your booking. Here is your invoice:</p>
+
+        <p><b>Course:</b> ${course.name}</p>
+        <p><b>Price:</b> ${course.price ? course.price + " AED" : "N/A"}</p>
+        <p><b>User Name:</b> ${user.name}</p>
+        <p><b>User Email:</b> ${user.email}</p>
+
+        <br/>
+        <p><b>Status:</b> ${key === "1" ? "Booking Confirmed" : "Watched"}</p>
+
+        <br/>
+        <small>This is an automated invoice — please do not reply.</small>
+      </div>
+    `;
+
+    const userMail = {
+      message: {
+        subject: `🧾 Invoice for your course "${course.name}"`,
+        body: {
+          contentType: "HTML",
+          content: invoiceHtml,
+        },
+        toRecipients: [{ emailAddress: { address: user.email } }],
+      },
+      saveToSentItems: "true",
+    };
+
+    const adminMail = {
+      message: {
+        subject: `📩 New Course Booking - ${user.name}`,
+        body: {
+          contentType: "HTML",
+          content: invoiceHtml,
+        },
+        toRecipients: [{ emailAddress: { address: ADMIN_EMAIL } }],
+      },
+      saveToSentItems: "true",
+    };
+
+    try {
+      await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(userMail);
+      await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(adminMail);
+      console.log("Invoice email sent to user and admin.");
+    } catch (err) {
+      console.error("Error sending invoice emails:", err);
+    }
+
+  
+    res.json({ success: true, course1: course, user });
+
   } catch (err) {
     console.error("Error updating booked users:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+

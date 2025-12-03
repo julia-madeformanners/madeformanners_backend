@@ -93,7 +93,7 @@ exports.notificationAlert = async (req, res) => {
 
     res.json({ message: "Notification sent successfully", notifiedUsers: users.length });
   } catch (err) {
-    console.error("❌ Error sending notification:", err);
+    console.error(" Error sending notification:", err);
     res.status(500).json({ message: "Server error while sending notification", error: err.message });
   }
 };
