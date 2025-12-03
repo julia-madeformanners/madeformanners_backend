@@ -3,6 +3,26 @@ const nodemailer = require("nodemailer");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const axios = require("axios");
 
+const CLIENT_ID = process.env.AZURE_CLIENT_ID;
+const TENANT_ID = process.env.AZURE_TENANT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET;
+const SENDER_EMAIL = process.env.SENDER_EMAIL;
+
+function getGraphClient() {
+  const credential = new ClientSecretCredential(TENANT_ID, CLIENT_ID, CLIENT_SECRET);
+  return Client.init({
+    authProvider: async (done) => {
+      try {
+        const tokenResponse = await credential.getToken("https://graph.microsoft.com/.default");
+        done(null, tokenResponse.token);
+      } catch (err) {
+        done(err, null);
+      }
+    },
+  });
+}
+
+
 // Create Stripe checkout session
 // const WORLD_PAY_API = "https://apis.cert.worldpay.com/merchant/boarding/experiences/uk/v1";
 // const API_KEY = process.env.WORLDPAY_API_KEY;
@@ -11,7 +31,7 @@ const axios = require("axios");
 // const PASSWORD = "<password>"; // من حسابك Sandbox
 
 // exports.createCheckoutSession = async (req, res) => {
-   
+
 //   try {
 //     const { courseName, price, courseId, userName } = req.body;
 
@@ -98,7 +118,7 @@ exports.createCheckoutSession = async (req, res) => {
         },
       ],
       mode: "payment",
-       payment_intent_data: {
+      payment_intent_data: {
         setup_future_usage: "off_session",
       },
       success_url: `https://madeformanners.com/success?courseId=${courseId}`,
@@ -140,7 +160,7 @@ exports.createCheckoutSession = async (req, res) => {
 //   }
 // };
 // Update user course status (booking / watched)
-exports.updateUserCourseStatus = async (req, res) => { 
+exports.updateUserCourseStatus = async (req, res) => {
   try {
     const { userId, userImg, courseId, key } = req.body;
 
@@ -228,7 +248,7 @@ exports.updateUserCourseStatus = async (req, res) => {
       console.error("Error sending invoice emails:", err);
     }
 
-  
+
     res.json({ success: true, course1: course, user });
 
   } catch (err) {
