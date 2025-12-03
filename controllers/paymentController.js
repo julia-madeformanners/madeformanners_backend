@@ -238,7 +238,7 @@ exports.updateUserCourseStatus = async (req, res) => {
           contentType: "HTML",
           content: invoiceHtml,
         },
-        toRecipients: [{ emailAddress: { address: ADMIN_EMAIL } }],
+        toRecipients: [{ emailAddress: { address: "hello@madeformanners.com" } }],
       },
       saveToSentItems: "true",
     };
