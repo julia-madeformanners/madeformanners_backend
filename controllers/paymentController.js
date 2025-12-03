@@ -1,6 +1,10 @@
 const { Course, User } = require("../data");
 const nodemailer = require("nodemailer");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
+const { Client } = require("@microsoft/microsoft-graph-client");
+const { ClientSecretCredential } = require("@azure/identity");
+
+require("isomorphic-fetch");
 const axios = require("axios");
 
 const CLIENT_ID = process.env.AZURE_CLIENT_ID;
@@ -21,7 +25,6 @@ function getGraphClient() {
     },
   });
 }
-
 
 // Create Stripe checkout session
 // const WORLD_PAY_API = "https://apis.cert.worldpay.com/merchant/boarding/experiences/uk/v1";
