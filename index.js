@@ -170,5 +170,32 @@ io.on("connection", (socket) => {
 
 });
 
+const removeOldNotifications = async () => {
+  try {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    await User.updateMany(
+      {},
+      {
+        $pull: {
+          notifications: { createdAt: { $lt: oneWeekAgo } },
+          newNotifications: { createdAt: { $lt: oneWeekAgo } }
+        }
+      }
+    );
+
+    console.log("Old notifications removed successfully at", new Date());
+  } catch (err) {
+    console.error("Error removing old notifications:", err);
+  }
+};
+
+
+cron.schedule('0 2 * * *', () => {
+  console.log("Running scheduled job to remove old notifications...");
+  removeOldNotifications();
+});
+
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

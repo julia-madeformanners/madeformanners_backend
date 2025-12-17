@@ -207,7 +207,7 @@ exports.updateUserCourseStatus = async (req, res) => {
         <p>Thank you for your booking. Here is your invoice:</p>
 
         <p><b>Course:</b> ${course.name}</p>
-        <p><b>Price:</b> ${course.price ? course.price + " AED" : "N/A"}</p>
+        <p><b>Price:</b> ${course.price ? course.price + "£" : "N/A"}</p>
         <p><b>User Name:</b> ${user.name}</p>
         <p><b>User Email:</b> ${user.email}</p>
 
