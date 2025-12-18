@@ -62,34 +62,34 @@ exports.notificationAlert = async (req, res) => {
     global.io.emit("new_course", info);
 
     // Send email to all users
-    // for (const user of users) {
-    //   const mail = {
-    //     message: {
-    //       subject: `📢 New Course Added: ${course.name}`,
-    //       body: {
-    //         contentType: "HTML",
-    //         content: `
-    //         <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
-    //           <h2>New Course Available 🎉</h2>
-    //           <p>Hi ${user.name}, we're excited to announce a new course on <b>${course.name}</b>!</p>
-    //           <p>${course.description || ""}</p>
-    //           <p><b>Date:</b> ${course.date} (${course.time} - ${course.endtime})</p>
-    //           <p><b>Price:</b> ${course.price} £</p>
-    //           <a href="https://madeformanners.com/courses" 
-    //              style="background:#C6A662;color:white;padding:10px 18px;text-decoration:none;border-radius:6px">
-    //              View Course
-    //           </a>
-    //           <br/><br/>
-    //           <small>This is an automated message — please do not reply.</small>
-    //         </div>
-    //         `,
-    //       },
-    //       toRecipients: [{ emailAddress: { address: user.email } }],
-    //     },
-    //     saveToSentItems: "true",
-    //   };
-    //   await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(mail);
-    // }
+    for (const user of users) {
+      const mail = {
+        message: {
+          subject: `📢 New Course Added: ${course.name}`,
+          body: {
+            contentType: "HTML",
+            content: `
+            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
+              <h2>New Course Available 🎉</h2>
+              <p>Hi ${user.name}, we're excited to announce a new course on <b>${course.name}</b>!</p>
+              <p>${course.description || ""}</p>
+              <p><b>Date:</b> ${course.date} (${course.time} - ${course.endtime})</p>
+              <p><b>Price:</b> ${course.price} £</p>
+              <a href="https://madeformanners.com/courses" 
+                 style="background:#C6A662;color:white;padding:10px 18px;text-decoration:none;border-radius:6px">
+                 View Course
+              </a>
+              <br/><br/>
+              <small>This is an automated message — please do not reply.</small>
+            </div>
+            `,
+          },
+          toRecipients: [{ emailAddress: { address: user.email } }],
+        },
+        saveToSentItems: "true",
+      };
+      await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(mail);
+    }
 
     res.json({ message: "Notification sent successfully", notifiedUsers: users.length });
   } catch (err) {
@@ -188,6 +188,7 @@ exports.notificationBeforeCourse = async () => {
     console.error("Error sending course reminders:", err);
   }
 };
+
 exports.contactMessageAlert = async (req, res) => {
   try {
     const { name, email, phone, message } = req.body;
