@@ -299,3 +299,4 @@ exports.markNotificationsAsRead = async (req, res) => {
     return res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+

@@ -5,8 +5,10 @@ const http = require("http");
 const cron = require("node-cron")
 const { Server } = require("socket.io");
 const sitemapRouter = require("./routes/sitemap");
+
 require('dotenv').config();
 const { notificationBeforeCourse } = require('./controllers/notificationController');
+const nodemailer = require("nodemailer");
 
 const userRoutes = require("./routes/userRoutes");
 const courseRoutes = require("./routes/courseRoutes");

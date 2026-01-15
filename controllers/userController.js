@@ -42,13 +42,6 @@ exports.getUser = async (req, res) => {
 };
 exports.registerUser = async (req, res) => {
   try {
-
-    await upload.single("img")(req, res, async function (err) {
-      if (err) {
-        console.error("Upload error:", err.stack || err);
-        return res.status(500).json({ message: "Image upload error" });
-      }
-
       const { name, email, password, confirmPassword, date, time, endtime,img, courses , notifications, newNotifications } = req.body;
 
       const existingUser = await User.findOne({ email });
@@ -78,7 +71,7 @@ exports.registerUser = async (req, res) => {
 
       await newUser.save();
       res.json({ message: "User created successfully", user: newUser });
-    });
+   
   } catch (err) {
     console.error("Error adding user:", err.stack || err);
     res.status(500).json({ message: "Server error" });
