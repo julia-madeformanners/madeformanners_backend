@@ -63,7 +63,7 @@ exports.postContactUsDetails = async (req, res) => {
     });
     await newMessage.save();
 
-    const link = `${process.env.FRONTEND_URL}/contact?verifyToken=${token}`;
+    const link = `${process.env.FRONTEND_URL}/contactUs/verifyContactEmail?token=${token}`;
 
     // إرسال رابط التحقق فقط
     const client = getGraphClient();
