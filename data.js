@@ -15,7 +15,7 @@ const courseSubSchema = new mongoose.Schema({
   link: String,
   coursePlace: String, // 'Face-to-Face' , 'Online'
 }, { timestamps: true });
- 
+
 const notificationsSubSchema = new mongoose.Schema({
   title: String,
   message: String,
@@ -101,7 +101,9 @@ const contactMessageSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true },
   phone: String,
-  message: { type: String, required: true }
+  message: { type: String, required: true },
+  verified: { type: Boolean, default: false },
+  token: String
 }, { timestamps: true });
 
 
