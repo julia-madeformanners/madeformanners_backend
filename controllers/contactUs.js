@@ -63,7 +63,7 @@ exports.postContactUsDetails = async (req, res) => {
     });
     await newMessage.save();
 
-    const link = `${process.env.SERVER_URL}/api/contactUs/verifyContactEmail?token=${token}`;
+    const link = `${process.env.FRONTEND_URL}/ConfirmEmail?token=${token}`;
 
     // إرسال رابط التحقق فقط
     const client = getGraphClient();
@@ -101,7 +101,7 @@ exports.postContactUsDetails = async (req, res) => {
 
 // عند الضغط على الرابط بالإيميل: تفعيل الرسالة وإرسالها فعليًا
 exports.verifyContactEmail = async (req, res) => {
-  console.log('hi')
+  console.log()
   try {
     const { token } = req.query;
     const message = await ContactMessage.findOne({ token });
