@@ -79,7 +79,7 @@ exports.postContactUsDetails = async (req, res) => {
           content: `
             <p>Hi ${name},</p>
             <p>Please verify your email to send your message:</p>
-            <a href="${link}" style="background:#25354c;color:white;padding:20px 18px;border-radius:6px;text-decoration:none">
+            <a href="${link}" style="background:#25354c;color:white;padding:5px 18px;border-radius:6px;text-decoration:none">
               Verify Email
             </a>
           `,
