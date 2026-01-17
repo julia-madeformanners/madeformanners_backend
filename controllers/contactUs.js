@@ -29,14 +29,15 @@ function getGraphClient() {
 exports.postContactUsDetails = async (req, res) => {
   try {
     const { name, email, phone, message, recaptchaToken } = req.body;
+
     if (!name || !email || !phone || !message) {
-      return res.status(400).json({ success: false, message: "All fields are required" });
-    }
-    if (!recaptchaToken) {
-      return res.status(400).json({ success: false, message: "reCAPTCHA token missing" });
+      return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Verify reCAPTCHA
+    if (!recaptchaToken) {
+      return res.status(400).json({ message: "reCAPTCHA token missing" });
+    }
+
     const recaptchaResponse = await axios.post(
       "https://www.google.com/recaptcha/api/siteverify",
       null,
@@ -49,10 +50,12 @@ exports.postContactUsDetails = async (req, res) => {
     );
 
     if (!recaptchaResponse.data.success) {
-      return res.status(403).json({ success: false, message: "Robot verification failed" });
+      return res.status(403).json({ message: "Robot verification failed" });
     }
 
     const token = crypto.randomBytes(32).toString("hex");
+
+    // نحفظ الرسالة غير مؤكدة
     const newMessage = new ContactMessage({
       name,
       email,
@@ -61,106 +64,105 @@ exports.postContactUsDetails = async (req, res) => {
       verified: false,
       token,
     });
+    
     await newMessage.save();
+    
 
     const link = `${process.env.FRONTEND_URL}/ConfirmEmail?token=${token}`;
 
-    // إرسال رابط التحقق فقط
     const client = getGraphClient();
-    const mail = {
+    await client.api(`/users/${SENDER_EMAIL}/sendMail`).post({
       message: {
         subject: "Verify your email",
         body: {
           contentType: "HTML",
           content: `
-            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
-              <p>Hi ${name},</p>
-              <p>Please click the link below to verify your email and send your message:</p>
-              <a href="${link}" 
-                 style="background:#C6A662;color:white;padding:10px 18px;text-decoration:none;border-radius:6px">
-                 Verify Email
-              </a>
-              <br/><br/>
-              <small>Thank you!</small>
-            </div>
+            <p>Hi ${name},</p>
+            <p>Please verify your email to send your message:</p>
+            <a href="${link}" style="background:#C6A662;color:white;padding:10px 18px;border-radius:6px;text-decoration:none">
+              Verify Email
+            </a>
           `,
         },
         toRecipients: [{ emailAddress: { address: email } }],
       },
-      saveToSentItems: "true",
-    };
+    });
 
-    await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(mail);
-
-    res.status(201).json({ success: true, message: "Please check your email to verify your message" });
+    res.status(201).json({
+      success: true,
+      message: "Please check your email to verify your message",
+    });
   } catch (err) {
-    console.error("Error in postContactUsDetails:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("postContactUsDetails error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 // عند الضغط على الرابط بالإيميل: تفعيل الرسالة وإرسالها فعليًا
 exports.verifyContactEmail = async (req, res) => {
-  console.log()
   try {
     const { token } = req.query;
-    const message = await ContactMessage.findOne({ token });
+   
 
-    if (!message) return res.status(400).send("Invalid or expired token");
+    if (!token) {
+      return res.status(400).json({ message: "Token missing" });
+    }
+
+    const message = await ContactMessage.findOne({ token });
+    
+    if (!message) {
+      return res.status(400).json({ message: "Invalid or expired token" });
+    }
+
+    if (message.verified) {
+      return res.json({ success: true, message: "Already verified" });
+    }
 
     message.verified = true;
     message.token = null;
     await message.save();
 
-    // إرسال الرسالة الآن بعد التحقق
+    // إرسال الرسالة للأدمن بعد التحقق فقط
     const client = getGraphClient();
-    const mail = {
+    await client.api(`/users/${SENDER_EMAIL}/sendMail`).post({
       message: {
-        subject: "New Contact Us Message",
+        subject: "📢 New Contact Us Message",
         body: {
           contentType: "HTML",
           content: `
-            <div style="font-family:Arial,sans-serif;line-height:1.6;color:#333">
-              <p>Name: ${message.name}</p>
-              <p>Email: ${message.email}</p>
-              <p>Phone: ${message.phone}</p>
-              <p>Message: ${message.message}</p>
-            </div>
+            <p><strong>Name:</strong> ${message.name}</p>
+            <p><strong>Email:</strong> ${message.email}</p>
+            <p><strong>Phone:</strong> ${message.phone}</p>
+            <p><strong>Message:</strong> ${message.message}</p>
           `,
         },
         toRecipients: [{ emailAddress: { address: SENDER_EMAIL } }],
       },
-      saveToSentItems: "true",
-    };
-
-    await client.api(`/users/${SENDER_EMAIL}/sendMail`).post(mail);
-
-    // إرسال إشعار بعد التحقق
-    await axios.post(`${process.env.SERVER_URL}/api/notification/contactusAlert`, {
-        name: message.name,
-        email: message.email,
-        phone: message.phone,
-        message: message.message,
     });
 
-    // إعادة التوجيه للـ frontend مع رسالة نجاح
-    res.redirect(`${process.env.FRONTEND_URL}/contact?success=true`);
+    return res.json({ success: true });
   } catch (err) {
-    console.error("Error in verifyContactEmail:", err);
-    res.status(500).send("Server error");
+    console.error("verifyContactEmail error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
 exports.getContactUsDetails = async (req, res) => {
   try {
-    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    const messages = await ContactMessage
+      .find({ verified: true })
+      .sort({ createdAt: -1 });
+
     res.json(messages);
   } catch (err) {
+    console.error("getContactUsDetails error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
 // Delete selected contact messages
 exports.deleteContactMessages = async (req, res) => {
   try {
