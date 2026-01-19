@@ -5,6 +5,7 @@ const courseSubSchema = new mongoose.Schema({
   name: String,
   description: String,
   date: String,
+  dateEnd:String,
   time: String,
   endtime: String,
   img: String,
