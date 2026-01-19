@@ -32,6 +32,8 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 * 1024 * 5 }
 });
 
+exports.upload = upload;
+
 exports.getUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
