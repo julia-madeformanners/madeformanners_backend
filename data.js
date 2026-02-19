@@ -9,7 +9,7 @@ const courseSubSchema = new mongoose.Schema({
   time: String,
   endtime: String,
   img: String,
-  price: Number,
+  price: String ,
   recommended: Boolean,
   categories: [String],
   status: String,

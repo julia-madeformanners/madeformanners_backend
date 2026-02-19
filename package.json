@@ -25,7 +25,9 @@
     "socket.io": "^4.8.1",
     "stream-chat": "^9.15.0",
     "streamifier": "^0.1.1",
-    "stripe": "^18.4.0"
+    "stripe": "^18.4.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "scripts": {
     "start": "node index.js",

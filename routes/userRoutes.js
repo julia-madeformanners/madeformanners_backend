@@ -3,6 +3,15 @@ const { registerUser, loginUser, updateUser, uploadVideoLink , deleteUser , getU
 const router = express.Router();
 
 router.get("/:id", getUser);
+/**
+ * @swagger
+ * /register:
+ *   post:
+ *     summary: User Register
+ *     responses:
+ *       200:
+ *         description: succsess
+ */
 router.post("/register",  upload.single("img"), registerUser);
 router.post("/login", loginUser);
 router.put("/:id", updateUser);

@@ -5,6 +5,8 @@ const http = require("http");
 const cron = require("node-cron")
 const { Server } = require("socket.io");
 const sitemapRouter = require("./routes/sitemap");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swagger");
 
 require('dotenv').config();
 const { notificationBeforeCourse } = require('./controllers/notificationController');
@@ -57,6 +59,8 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "5gb" }));
 app.use(express.urlencoded({ limit: "5gb", extended: true }));
 app.use("/", sitemapRouter);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 mongoose.connect(process.env.MONGO_URI)
   .then(async () => {
 
@@ -201,3 +205,4 @@ cron.schedule('0 2 * * *', () => {
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
