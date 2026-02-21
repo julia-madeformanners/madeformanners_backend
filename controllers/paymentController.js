@@ -106,6 +106,13 @@ function getGraphClient() {
 exports.createCheckoutSession = async (req, res) => {
   try {
     const { courseName, price, courseId } = req.body;
+   
+    const numericPrice = Number(price);
+
+    if (!numericPrice || numericPrice <= 0) {
+      return res.status(400).json({ error: "Invalid price value" });
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -115,22 +122,20 @@ exports.createCheckoutSession = async (req, res) => {
             product_data: {
               name: courseName,
             },
-            unit_amount: Math.round(price * 100),
+            unit_amount: Math.round(numericPrice * 100),
           },
           quantity: 1,
         },
       ],
       mode: "payment",
-      payment_intent_data: {
-        setup_future_usage: "off_session",
-      },
       success_url: `https://madeformanners.com/success?courseId=${courseId}`,
       cancel_url: "https://madeformanners.com/payment_failed",
     });
 
     res.json({ url: session.url });
+
   } catch (err) {
-    // console.error("Error creating checkout session:", err);
+    console.error("Stripe Error:", err);
     res.status(500).json({ error: err.message });
   }
 };
